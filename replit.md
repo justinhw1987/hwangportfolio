@@ -39,6 +39,12 @@ Preferred communication style: Simple, everyday language.
 5. Replaced Uppy file uploader with custom ObjectUploader component using native file input
 6. Fixed nested anchor tag issues in landing page navigation
 7. Ensured form validation uses insertProjectSchema from shared/schema.ts
+8. **Railway Deployment Support:**
+   - Migrated from Neon serverless driver to standard PostgreSQL driver (pg/node-postgres)
+   - Updated database connection to support both Replit and Railway deployments
+   - Added SSL support for production PostgreSQL connections
+   - Created comprehensive Railway deployment guide in DEPLOYMENT.md
+   - Removed unused @neondatabase/serverless dependency
 
 ## System Architecture
 
@@ -95,9 +101,10 @@ Preferred communication style: Simple, everyday language.
 ### Data Storage
 
 **Database:**
-- PostgreSQL via Neon serverless driver
+- PostgreSQL via standard node-postgres (pg) driver
 - Drizzle ORM for type-safe database queries
-- WebSocket connection pooling for serverless environments
+- Standard TCP connection pooling
+- SSL support enabled for production deployments (Railway, etc.)
 
 **Schema Design:**
 - `users` table: Admin user accounts (id, username, password, email, first_name, last_name)

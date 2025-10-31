@@ -55,54 +55,82 @@ Your code is now on GitHub! 🎉
 ### 3. Add PostgreSQL Database
 
 1. In your Railway project, click **"New"** → **"Database"** → **"Add PostgreSQL"**
-2. Railway will automatically create a database and set the `DATABASE_URL` environment variable
+2. Wait for PostgreSQL to provision (this takes a few seconds)
 
-### 4. Set Environment Variables
+### 4. Link Database to Your Application
 
-Click on your web service, go to **"Variables"** tab, and add:
+**IMPORTANT**: You must link the database to your application service:
+
+1. Click on your **application service** (not the database)
+2. Go to the **"Variables"** tab
+3. Click **"New Variable"** → **"Add Reference"**
+4. Select your **PostgreSQL** database
+5. Choose **"DATABASE_URL"** from the dropdown
+6. Click **"Add"**
+
+This automatically sets the `DATABASE_URL` environment variable to point to your Railway database.
+
+### 5. Set Other Environment Variables
+
+While still in the **"Variables"** tab of your application service, add these additional variables:
+
+**Click "New Variable" and add each one:**
 
 ```bash
-# Required Variables
+# Security (REQUIRED)
 ADMIN_PASSWORD=your-secure-password-here
 SESSION_SECRET=your-random-secret-key-here
 
-# These should be auto-set by Railway's PostgreSQL:
-DATABASE_URL=postgresql://...  # Auto-set when you add PostgreSQL
-PGHOST=...                      # Auto-set
-PGPORT=...                      # Auto-set
-PGUSER=...                      # Auto-set
-PGPASSWORD=...                  # Auto-set
-PGDATABASE=...                  # Auto-set
+# Environment
+NODE_ENV=production
 ```
 
-**Important**: For `SESSION_SECRET`, generate a random string:
-```bash
-# Run this in your terminal to generate a secure secret:
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
+**Important**: 
+- For `ADMIN_PASSWORD`: Choose a strong password (minimum 12 characters, mix of letters, numbers, symbols)
+- For `SESSION_SECRET`: Generate a secure random string using:
+  ```bash
+  node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+  ```
 
-### 5. Add Object Storage (Google Cloud Storage)
+### 6. Push Database Schema to Railway
 
-You'll need to set up Google Cloud Storage separately:
+Now you need to create the database tables on Railway. From your **Replit Shell** (or local terminal):
 
-1. Go to https://console.cloud.google.com
-2. Create a new bucket or use an existing one
-3. Set up service account credentials
-4. Add these to Railway environment variables:
-```bash
-DEFAULT_OBJECT_STORAGE_BUCKET_ID=your-bucket-id
-PUBLIC_OBJECT_SEARCH_PATHS=/objects/uploads
-PRIVATE_OBJECT_DIR=.private
-```
+1. **Set the Railway DATABASE_URL**:
+   ```bash
+   # Get this from Railway: Click PostgreSQL service → Connect tab → Copy "Postgres Connection URL"
+   export DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@shinkansen.proxy.rlwy.net:PORT/railway"
+   ```
 
-### 6. Configure Build & Start Commands
+2. **Push the schema**:
+   ```bash
+   npm run db:push
+   ```
 
-Railway should auto-detect, but verify in **Settings** → **Build & Deploy**:
+   This creates all necessary tables in your Railway database (users, projects, project_images, uploaded_files, sessions, site_settings).
+
+3. **Verify tables were created**:
+   ```bash
+   # Connect to Railway database
+   psql "$DATABASE_URL"
+   
+   # List tables
+   \dt
+   
+   # You should see: users, projects, project_images, uploaded_files, sessions, site_settings
+   
+   # Exit
+   \q
+   ```
+
+### 7. Configure Build & Start Commands (Optional)
+
+Railway should auto-detect these, but you can verify in **Settings** → **Build & Deploy**:
 
 - **Build Command**: `npm install && npm run build`
 - **Start Command**: `npm start`
 
-### 7. Deploy!
+### 8. Deploy!
 
 1. Click **"Deploy"** 
 2. Railway will:
@@ -142,24 +170,52 @@ Railway will detect the push and redeploy automatically! 🚀
 
 ## Troubleshooting
 
+### "ADMIN_PASSWORD must be set" Error
+**Error**: `SECURITY ERROR: ADMIN_PASSWORD environment variable must be set to a strong password in production`
+
+**Solution**: 
+1. Go to your Railway app service → Variables tab
+2. Add `ADMIN_PASSWORD` with a strong password
+3. Wait for automatic redeployment
+
 ### Database Connection Issues
-- Verify `DATABASE_URL` is set correctly
-- Check that PostgreSQL service is running in Railway
+
+**Error**: `Error initializing admin user: ErrorEvent` or `ECONNREFUSED`
+
+**Cause**: This happens when `DATABASE_URL` is not properly linked to your application.
+
+**Solution**:
+1. Make sure you **linked** the PostgreSQL database to your app (see Step 4 above)
+2. Verify in Variables tab that `DATABASE_URL` shows a reference to PostgreSQL
+3. If manually set, ensure the URL format is: `postgresql://user:password@host:port/database`
+4. Check that SSL is enabled for production connections
+
+**Error**: `DATABASE_URL must be set. Did you forget to provision a database?`
+
+**Solution**: 
+1. Add PostgreSQL database: Click "New" → "Database" → "Add PostgreSQL"
+2. Link it to your app using "Add Reference" in Variables tab
+
+### Schema/Table Missing
+
+**Error**: Tables don't exist or queries fail
+
+**Solution**:
+1. Push your schema: `export DATABASE_URL="..." && npm run db:push`
+2. Verify tables exist: Connect with `psql` and run `\dt`
+3. Expected tables: users, projects, project_images, uploaded_files, sessions, site_settings
 
 ### Build Failures
-- Check the build logs in Railway
+- Check the build logs in Railway deployment tab
 - Ensure all dependencies are in `package.json`
-- Verify build command is correct
+- Verify build command is: `npm install && npm run build`
+- Make sure Node.js version is compatible (v18 or higher)
 
 ### Environment Variables
-- Make sure all required variables are set
-- `ADMIN_PASSWORD` is required in production
-- `SESSION_SECRET` should be a secure random string
-
-### Object Storage Issues
-- Verify Google Cloud Storage credentials
-- Check bucket permissions
-- Ensure bucket ID is correct
+- Required in production: `ADMIN_PASSWORD`, `SESSION_SECRET`, `DATABASE_URL`, `NODE_ENV`
+- `ADMIN_PASSWORD` must NOT be "admin123"
+- `SESSION_SECRET` should be a 32+ character random string
+- All variables must be set in Railway's Variables tab
 
 ## Need Help?
 
