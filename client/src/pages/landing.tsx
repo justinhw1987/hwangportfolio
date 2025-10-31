@@ -168,7 +168,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <h3 className="text-xl font-bold font-display mb-2">Portfolio</h3>
+              <h3 className="text-xl font-bold font-display mb-2">hwang portfolio</h3>
               <p className="text-sm text-muted-foreground">
                 Showcasing creative transformations
               </p>
