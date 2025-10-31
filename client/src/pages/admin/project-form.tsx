@@ -622,7 +622,12 @@ export default function ProjectForm() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <FormLabel>Before Images</FormLabel>
-                        {!isNewProject && (
+                        {isNewProject ? (
+                          <Button variant="outline" size="sm" disabled data-testid="button-upload-before-disabled">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Before
+                          </Button>
+                        ) : (
                           <ObjectUploader
                             maxNumberOfFiles={100}
                             onGetUploadParameters={() => handleImageUpload('before')}
@@ -656,7 +661,12 @@ export default function ProjectForm() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <FormLabel>After Images</FormLabel>
-                        {!isNewProject && (
+                        {isNewProject ? (
+                          <Button variant="outline" size="sm" disabled data-testid="button-upload-after-disabled">
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add After
+                          </Button>
+                        ) : (
                           <ObjectUploader
                             maxNumberOfFiles={100}
                             onGetUploadParameters={() => handleImageUpload('after')}
@@ -702,7 +712,12 @@ export default function ProjectForm() {
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between">
                       <FormLabel>Additional Photos</FormLabel>
-                      {!isNewProject && (
+                      {isNewProject ? (
+                        <Button variant="outline" size="sm" disabled data-testid="button-upload-gallery-disabled">
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Gallery Images
+                        </Button>
+                      ) : (
                         <ObjectUploader
                           maxNumberOfFiles={100}
                           onGetUploadParameters={() => handleImageUpload('gallery')}
