@@ -135,10 +135,6 @@ export default function ProjectDetail() {
       {(beforeImages.length > 0 || afterImages.length > 0) && (
         <section className="py-20 px-6 lg:px-8 bg-card">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl font-bold font-display tracking-tight mb-12" data-testid="text-before-after-heading">
-              Transformation
-            </h2>
-            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Before Column */}
               <div className="space-y-4">
