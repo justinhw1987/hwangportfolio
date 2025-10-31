@@ -1,11 +1,12 @@
-// Reference: javascript_log_in_with_replit, javascript_object_storage blueprints
+// Reference: javascript_object_storage blueprint
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import passport from "passport";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { insertProjectSchema, insertProjectImageSchema } from "@shared/schema";
+import { insertProjectSchema, insertProjectImageSchema, loginSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -13,20 +14,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+  app.post('/api/auth/login', (req, res, next) => {
+    const result = loginSchema.safeParse(req.body);
+    if (!result.success) {
+      const validationError = fromZodError(result.error);
+      return res.status(400).json({ message: validationError.message });
     }
+
+    passport.authenticate('local', (err: any, user: any, info: any) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        return res.status(401).json({ message: info?.message || "Invalid credentials" });
+      }
+      req.logIn(user, (err) => {
+        if (err) {
+          return next(err);
+        }
+        return res.json(user);
+      });
+    })(req, res, next);
+  });
+
+  app.post('/api/auth/logout', (req, res, next) => {
+    req.logout((err) => {
+      if (err) {
+        return next(err);
+      }
+      req.session.destroy((err) => {
+        if (err) return next(err);
+        res.clearCookie("connect.sid");
+        res.redirect("/");
+      });
+    });
+  });
+
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    res.json(req.user);
   });
 
   // Object Storage Routes
-  app.get("/objects/:objectPath(*)", isAuthenticated, async (req, res) => {
-    const userId = req.user?.claims?.sub;
+  app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
+    const userId = req.user?.id;
     const objectStorageService = new ObjectStorageService();
     try {
       const objectFile = await objectStorageService.getObjectEntityFile(
@@ -56,12 +86,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ uploadURL });
   });
 
-  app.put("/api/images", isAuthenticated, async (req, res) => {
+  app.put("/api/images", isAuthenticated, async (req: any, res) => {
     if (!req.body.imageURL) {
       return res.status(400).json({ error: "imageURL is required" });
     }
 
-    const userId = req.user?.claims?.sub;
+    const userId = req.user?.id;
 
     try {
       const objectStorageService = new ObjectStorageService();

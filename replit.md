@@ -9,6 +9,16 @@ The application is built as a full-stack TypeScript monorepo with a React fronte
 **Last Updated:** October 31, 2025
 **Status:** Production-ready MVP with complete CRUD functionality, authentication, and object storage integration
 
+## Security Notice
+
+**⚠️ IMPORTANT: Change Default Admin Password Before Deployment**
+
+The application includes a default admin account for initial setup:
+- Username: `admin`
+- Password: `admin123`
+
+**You MUST change this password before deploying to production.** See the "Managing Admin Users" section below for instructions.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -16,12 +26,19 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 **October 31, 2025:**
-1. Implemented ThemeProvider for dark mode support with localStorage persistence
-2. Added ThemeToggle component to application header
-3. Rebuilt admin project form to use react-hook-form with zodResolver for proper validation
-4. Replaced Uppy file uploader with custom ObjectUploader component using native file input
-5. Fixed nested anchor tag issues in landing page navigation
-6. Ensured form validation uses insertProjectSchema from shared/schema.ts
+1. Migrated authentication system from Replit OAuth to username/password authentication
+   - Implemented passport-local strategy with bcrypt password hashing
+   - Created admin users table with secure password storage
+   - Built login page component with form validation
+   - Updated all protected routes to use new authentication middleware
+   - Created default admin user (username: admin, password: admin123)
+   - Fixed logout flow to redirect properly without 404 page
+2. Implemented ThemeProvider for dark mode support with localStorage persistence
+3. Added ThemeToggle component to application header
+4. Rebuilt admin project form to use react-hook-form with zodResolver for proper validation
+5. Replaced Uppy file uploader with custom ObjectUploader component using native file input
+6. Fixed nested anchor tag issues in landing page navigation
+7. Ensured form validation uses insertProjectSchema from shared/schema.ts
 
 ## System Architecture
 
@@ -57,10 +74,12 @@ Preferred communication style: Simple, everyday language.
 - Middleware for request logging and JSON body parsing
 
 **Authentication System:**
-- Replit OAuth integration via OpenID Connect
-- Passport.js strategy for authentication flow
+- Username/password authentication using passport-local
+- Bcrypt password hashing for security
 - Session storage in PostgreSQL via connect-pg-simple
 - 7-day session expiry with secure, httpOnly cookies
+- Default admin credentials: username=admin, password=admin123
+- **Security Note**: No public registration endpoint - new admin users must be created via SQL to prevent unauthorized access
 
 **API Design:**
 - RESTful API endpoints under `/api/*` namespace
@@ -81,7 +100,7 @@ Preferred communication style: Simple, everyday language.
 - WebSocket connection pooling for serverless environments
 
 **Schema Design:**
-- `users` table: OAuth user profiles (id, email, name, profile image)
+- `users` table: Admin user accounts (id, username, password, email, first_name, last_name)
 - `sessions` table: Express session storage
 - `projects` table: Portfolio projects with metadata (title, description, category, year, client, role, tools, status, featured flag)
 - `projectImages` table: Project images with type (before/after), sort order, and cloud storage URLs
@@ -107,10 +126,10 @@ Preferred communication style: Simple, everyday language.
 - Client-side validation and error handling
 
 **Authentication Provider:**
-- Replit OAuth (OpenID Connect)
-- Issuer URL: https://replit.com/oidc
-- Token refresh mechanism with access/refresh tokens
-- Claims-based user identification
+- Passport-local strategy for username/password authentication
+- Bcrypt password hashing with salt rounds
+- Session-based authentication with PostgreSQL storage
+- Login page at /login route
 
 **UI Component Libraries:**
 - Radix UI primitives for accessible components
@@ -128,3 +147,48 @@ Preferred communication style: Simple, everyday language.
 - Shared types between client/server via `@shared` path alias
 - Drizzle schema inference for type-safe database operations
 - Zod schemas for request/response validation
+
+## Managing Admin Users
+
+### Changing the Admin Password
+
+**IMPORTANT**: Change the default password immediately before deploying to production.
+
+To change the admin password, use the following SQL commands:
+
+```sql
+-- First, generate a bcrypt hash for your new password
+-- You can do this in Node.js:
+-- node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('YOUR_NEW_PASSWORD', 10).then(hash => console.log(hash));"
+
+-- Then update the password in the database:
+UPDATE users 
+SET password = '$2b$10$YOUR_BCRYPT_HASH_HERE' 
+WHERE username = 'admin';
+```
+
+### Creating Additional Admin Users
+
+To create a new admin user, use the following SQL:
+
+```sql
+-- First, generate a bcrypt hash for the password
+-- node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('USER_PASSWORD', 10).then(hash => console.log(hash));"
+
+-- Then insert the new user:
+INSERT INTO users (username, password, email, first_name, last_name)
+VALUES (
+  'new_username',
+  '$2b$10$BCRYPT_HASH_HERE',
+  'user@example.com',
+  'First',
+  'Last'
+);
+```
+
+### Security Best Practices
+
+1. **Strong Passwords**: Use passwords with at least 12 characters, including uppercase, lowercase, numbers, and symbols
+2. **Unique Credentials**: Never reuse passwords across different systems
+3. **Regular Updates**: Change admin passwords periodically
+4. **Minimal Access**: Only create admin accounts for users who need full system access

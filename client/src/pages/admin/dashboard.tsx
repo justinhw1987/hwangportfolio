@@ -24,17 +24,9 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
+      setLocation("/login");
     }
-  }, [isAuthenticated, isLoading, toast]);
+  }, [isAuthenticated, isLoading, setLocation]);
 
   const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -112,14 +104,30 @@ export default function AdminDashboard() {
               <span>View Site</span>
             </a>
           </Link>
-          <a 
-            href="/api/logout" 
-            className="flex items-center gap-3 px-4 py-3 rounded-md hover-elevate active-elevate-2 text-destructive"
-            data-testid="link-logout"
+          <button
+            onClick={async () => {
+              try {
+                const response = await fetch("/api/auth/logout", {
+                  method: "POST",
+                  credentials: "include",
+                });
+                
+                if (response.redirected) {
+                  window.location.href = response.url;
+                } else if (response.ok) {
+                  window.location.href = "/";
+                }
+              } catch (error) {
+                console.error("Logout failed:", error);
+                window.location.href = "/";
+              }
+            }}
+            className="flex items-center gap-3 px-4 py-3 rounded-md hover-elevate active-elevate-2 text-destructive w-full text-left"
+            data-testid="button-logout"
           >
             <LogOut className="h-4 w-4" />
             <span>Log Out</span>
-          </a>
+          </button>
         </div>
       </aside>
 
