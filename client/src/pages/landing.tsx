@@ -55,6 +55,9 @@ export default function Landing() {
                 <h1 className="text-6xl lg:text-7xl font-bold font-display tracking-tight" data-testid="text-hero-title">
                   Design and build
                 </h1>
+                <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-lg">
+                  documenting projects we have completed over the years
+                </p>
               </div>
               <a href="#projects">
                 <Button size="lg" className="rounded-full px-8 group" data-testid="button-view-projects">
