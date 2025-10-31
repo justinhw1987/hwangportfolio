@@ -108,3 +108,18 @@ export const insertProjectImageSchema = createInsertSchema(projectImages).omit({
 
 export type InsertProjectImage = z.infer<typeof insertProjectImageSchema>;
 export type ProjectImage = typeof projectImages.$inferSelect;
+
+// Site settings table for global configuration
+export const siteSettings = pgTable("site_settings", {
+  id: varchar("id").primaryKey().default('default'),
+  heroImageUrl: text("hero_image_url"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertSiteSettingsSchema = createInsertSchema(siteSettings).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertSiteSettings = z.infer<typeof insertSiteSettingsSchema>;
+export type SiteSettings = typeof siteSettings.$inferSelect;

@@ -3,12 +3,15 @@ import {
   users,
   projects,
   projectImages,
+  siteSettings,
   type User,
   type InsertUser,
   type Project,
   type InsertProject,
   type ProjectImage,
   type InsertProjectImage,
+  type SiteSettings,
+  type InsertSiteSettings,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -31,6 +34,10 @@ export interface IStorage {
   createProjectImage(image: InsertProjectImage): Promise<ProjectImage>;
   deleteProjectImage(id: string): Promise<void>;
   updateProjectImageOrder(id: string, sortOrder: number): Promise<void>;
+  
+  // Site settings operations
+  getSiteSettings(): Promise<SiteSettings | undefined>;
+  updateSiteSettings(settings: Partial<InsertSiteSettings>): Promise<SiteSettings>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -117,6 +124,38 @@ export class DatabaseStorage implements IStorage {
       .update(projectImages)
       .set({ sortOrder })
       .where(eq(projectImages.id, id));
+  }
+
+  // Site settings operations
+  async getSiteSettings(): Promise<SiteSettings | undefined> {
+    const [settings] = await db.select().from(siteSettings).where(eq(siteSettings.id, 'default'));
+    return settings;
+  }
+
+  async updateSiteSettings(settingsData: Partial<InsertSiteSettings>): Promise<SiteSettings> {
+    const existing = await this.getSiteSettings();
+    
+    if (existing) {
+      const [updated] = await db
+        .update(siteSettings)
+        .set({
+          ...settingsData,
+          updatedAt: new Date(),
+        })
+        .where(eq(siteSettings.id, 'default'))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(siteSettings)
+        .values({
+          id: 'default',
+          ...settingsData,
+          updatedAt: new Date(),
+        })
+        .returning();
+      return created;
+    }
   }
 }
 

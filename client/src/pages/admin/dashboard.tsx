@@ -95,6 +95,12 @@ export default function AdminDashboard() {
               <span>New Project</span>
             </a>
           </Link>
+          <Link href="/admin/settings">
+            <a className="flex items-center gap-3 px-4 py-3 rounded-md hover-elevate active-elevate-2" data-testid="link-settings">
+              <Settings className="h-4 w-4" />
+              <span>Site Settings</span>
+            </a>
+          </Link>
         </nav>
 
         <div className="space-y-2 pt-6 border-t">

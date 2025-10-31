@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { ArrowRight, Loader2 } from "lucide-react";
-import type { Project } from "@shared/schema";
+import type { Project, SiteSettings } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,10 @@ import { ThemeToggle } from "@/components/theme-toggle";
 export default function Landing() {
   const { data: projects, isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
+  });
+
+  const { data: settings } = useQuery<SiteSettings>({
+    queryKey: ["/api/settings"],
   });
 
   const publishedProjects = projects?.filter(p => p.status === 'published') || [];
@@ -48,14 +52,23 @@ export default function Landing() {
 
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-6 lg:px-8 min-h-[80vh] flex items-center">
-        <div className="max-w-7xl mx-auto w-full">
+        {settings?.heroImageUrl && (
+          <>
+            <div 
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${settings.heroImageUrl})` }}
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40" />
+          </>
+        )}
+        <div className="max-w-7xl mx-auto w-full relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-5 space-y-8">
               <div className="space-y-4">
-                <h1 className="text-6xl lg:text-7xl font-bold font-display tracking-tight" data-testid="text-hero-title">
+                <h1 className={`text-6xl lg:text-7xl font-bold font-display tracking-tight ${settings?.heroImageUrl ? 'text-white' : ''}`} data-testid="text-hero-title">
                   Design and build
                 </h1>
-                <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-lg">
+                <p className={`text-lg lg:text-xl leading-relaxed max-w-lg ${settings?.heroImageUrl ? 'text-white/90' : 'text-muted-foreground'}`}>
                   Documenting projects we have completed over the years
                 </p>
               </div>

@@ -6,7 +6,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated, hashPassword } from "./auth";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { insertProjectSchema, insertProjectImageSchema, loginSchema } from "@shared/schema";
+import { insertProjectSchema, insertProjectImageSchema, loginSchema, insertSiteSettingsSchema } from "@shared/schema";
 import { fromZodError } from "zod-validation-error";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -232,6 +232,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating project image order:", error);
       res.status(500).json({ message: "Failed to update image order" });
+    }
+  });
+
+  // Site settings routes
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const settings = await storage.getSiteSettings();
+      res.json(settings || { heroImageUrl: null });
+    } catch (error) {
+      console.error("Error getting site settings:", error);
+      res.status(500).json({ message: "Failed to get site settings" });
+    }
+  });
+
+  app.put("/api/settings", isAuthenticated, async (req, res) => {
+    try {
+      const result = insertSiteSettingsSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+
+      const settings = await storage.updateSiteSettings(result.data);
+      res.json(settings);
+    } catch (error) {
+      console.error("Error updating site settings:", error);
+      res.status(500).json({ message: "Failed to update site settings" });
     }
   });
 

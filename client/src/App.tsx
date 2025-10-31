@@ -11,6 +11,7 @@ import ProjectDetail from "@/pages/project-detail";
 import Login from "@/pages/login";
 import AdminDashboard from "@/pages/admin/dashboard";
 import ProjectForm from "@/pages/admin/project-form";
+import SiteSettings from "@/pages/admin/site-settings";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -25,6 +26,7 @@ function Router() {
       {/* Admin routes */}
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/projects/:id" component={ProjectForm} />
+      <Route path="/admin/settings" component={SiteSettings} />
       
       {/* 404 */}
       <Route component={NotFound} />
