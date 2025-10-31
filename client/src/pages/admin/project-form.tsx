@@ -508,7 +508,7 @@ export default function ProjectForm() {
                       <div className="flex items-center justify-between">
                         <FormLabel>Before Images</FormLabel>
                         <ObjectUploader
-                          maxNumberOfFiles={5}
+                          maxNumberOfFiles={100}
                           onGetUploadParameters={() => handleImageUpload('before')}
                           onComplete={(result) => handleImageComplete(result, 'before')}
                           buttonClassName="data-testid-upload-before"
@@ -540,7 +540,7 @@ export default function ProjectForm() {
                       <div className="flex items-center justify-between">
                         <FormLabel>After Images</FormLabel>
                         <ObjectUploader
-                          maxNumberOfFiles={5}
+                          maxNumberOfFiles={100}
                           onGetUploadParameters={() => handleImageUpload('after')}
                           onComplete={(result) => handleImageComplete(result, 'after')}
                           buttonClassName="data-testid-upload-after"
@@ -579,7 +579,7 @@ export default function ProjectForm() {
                     <div className="flex items-center justify-between">
                       <FormLabel>Additional Photos</FormLabel>
                       <ObjectUploader
-                        maxNumberOfFiles={10}
+                        maxNumberOfFiles={100}
                         onGetUploadParameters={() => handleImageUpload('gallery')}
                         onComplete={(result) => handleImageComplete(result, 'gallery')}
                         buttonClassName="data-testid-upload-gallery"
