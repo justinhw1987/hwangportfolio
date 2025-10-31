@@ -54,61 +54,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(req.user);
   });
 
-  // Object Storage Routes
-  app.get("/objects/:objectPath(*)", isAuthenticated, async (req: any, res) => {
-    const userId = req.user?.id;
-    const objectStorageService = new ObjectStorageService();
+  // File Upload/Download Routes (Database-backed)
+  
+  // Upload image to database
+  app.post("/api/upload", isAuthenticated, async (req: any, res) => {
     try {
-      const objectFile = await objectStorageService.getObjectEntityFile(
-        req.path,
-      );
-      const canAccess = await objectStorageService.canAccessObjectEntity({
-        objectFile,
-        userId: userId,
-        requestedPermission: ObjectPermission.READ,
+      const { filename, contentType, data, size } = req.body;
+      
+      if (!filename || !contentType || !data) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const userId = req.user?.id;
+      
+      const file = await storage.createUploadedFile({
+        filename,
+        contentType,
+        data, // Base64 encoded image data
+        size,
+        uploadedBy: userId,
       });
-      if (!canAccess) {
-        return res.sendStatus(401);
-      }
-      objectStorageService.downloadObject(objectFile, res);
+
+      res.status(201).json({
+        id: file.id,
+        url: `/api/files/${file.id}`,
+      });
     } catch (error) {
-      console.error("Error checking object access:", error);
-      if (error instanceof ObjectNotFoundError) {
-        return res.sendStatus(404);
-      }
-      return res.sendStatus(500);
+      console.error("Error uploading file:", error);
+      res.status(500).json({ error: "Failed to upload file" });
     }
   });
 
-  app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
-    const objectStorageService = new ObjectStorageService();
-    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-    res.json({ uploadURL });
+  // Serve image from database
+  app.get("/api/files/:id", async (req, res) => {
+    try {
+      const file = await storage.getUploadedFile(req.params.id);
+      
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+
+      // Convert base64 to buffer
+      const buffer = Buffer.from(file.data, 'base64');
+      
+      res.set({
+        "Content-Type": file.contentType,
+        "Content-Length": buffer.length.toString(),
+        "Cache-Control": "public, max-age=31536000", // Cache for 1 year
+      });
+
+      res.send(buffer);
+    } catch (error) {
+      console.error("Error serving file:", error);
+      res.status(500).json({ error: "Failed to serve file" });
+    }
   });
 
-  app.put("/api/images", isAuthenticated, async (req: any, res) => {
-    if (!req.body.imageURL) {
-      return res.status(400).json({ error: "imageURL is required" });
-    }
-
-    const userId = req.user?.id;
-
+  // Delete image from database
+  app.delete("/api/files/:id", isAuthenticated, async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
-      const objectPath = await objectStorageService.trySetObjectEntityAclPolicy(
-        req.body.imageURL,
-        {
-          owner: userId,
-          visibility: "public",
-        },
-      );
-
-      res.status(200).json({
-        objectPath: objectPath,
-      });
+      await storage.deleteUploadedFile(req.params.id);
+      res.status(204).send();
     } catch (error) {
-      console.error("Error setting image:", error);
-      res.status(500).json({ error: "Internal server error" });
+      console.error("Error deleting file:", error);
+      res.status(500).json({ error: "Failed to delete file" });
     }
   });
 

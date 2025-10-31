@@ -123,3 +123,22 @@ export const insertSiteSettingsSchema = createInsertSchema(siteSettings).omit({
 
 export type InsertSiteSettings = z.infer<typeof insertSiteSettingsSchema>;
 export type SiteSettings = typeof siteSettings.$inferSelect;
+
+// Uploaded files table for storing images in database
+export const uploadedFiles = pgTable("uploaded_files", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  contentType: varchar("content_type", { length: 100 }).notNull(),
+  data: text("data").notNull(), // Base64 encoded image data
+  size: integer("size").notNull(),
+  uploadedBy: varchar("uploaded_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertUploadedFileSchema = createInsertSchema(uploadedFiles).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertUploadedFile = z.infer<typeof insertUploadedFileSchema>;
+export type UploadedFile = typeof uploadedFiles.$inferSelect;

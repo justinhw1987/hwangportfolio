@@ -182,106 +182,57 @@ export default function ProjectForm() {
     },
   });
 
-  const handleImageUpload = async (
-    type: 'thumbnail' | 'hero' | 'before' | 'after' | 'gallery'
-  ): Promise<{ method: "PUT"; url: string }> => {
-    try {
-      const response = await fetch("/api/objects/upload", {
-        method: "POST",
-        credentials: "include",
-      });
-      
-      if (!response.ok) {
-        throw new Error("Failed to get upload URL");
-      }
-      
-      const data = await response.json();
-      return {
-        method: "PUT",
-        url: data.uploadURL,
-      };
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to prepare upload",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
   const handleImageComplete = async (
     result: UploadResult<Record<string, unknown>, Record<string, unknown>>,
     type: 'thumbnail' | 'hero' | 'before' | 'after' | 'gallery'
   ) => {
     if (result.successful && result.successful.length > 0) {
-      const uploadURL = result.successful[0].uploadURL;
+      const imageUrl = result.successful[0].uploadURL; // This is now /api/files/ID
       
-      try {
-        const response = await fetch("/api/images", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ imageURL: uploadURL }),
-        });
-        
-        if (!response.ok) {
-          throw new Error("Failed to save image");
-        }
-        
-        const data = await response.json();
-        
-        if (type === 'thumbnail') {
-          form.setValue('thumbnailUrl', data.objectPath);
-          toast({
-            title: "Success",
-            description: "Thumbnail uploaded successfully",
-          });
-        } else if (type === 'hero') {
-          form.setValue('heroImageUrl', data.objectPath);
-          toast({
-            title: "Success",
-            description: "Hero image uploaded successfully",
-          });
-        } else if (type === 'before' || type === 'after' || type === 'gallery') {
-          if (isNewProject) {
-            // Store in pending images for new projects
-            setPendingImages(prev => ({
-              ...prev,
-              [type]: [...prev[type], data.objectPath],
-            }));
-            
-            toast({
-              title: "Success",
-              description: `Image uploaded - will be saved when you create the project`,
-            });
-            return;
-          }
-          
-          if (projectId) {
-            const imageData: InsertProjectImage = {
-              projectId: projectId,
-              imageUrl: data.objectPath,
-              imageType: type,
-              caption: null,
-              sortOrder: 0,
-            };
-            
-            await apiRequest("POST", `/api/projects/${projectId}/images`, imageData);
-            queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "images"] });
-            
-            toast({
-              title: "Success",
-              description: "Image uploaded successfully",
-            });
-          }
-        }
-      } catch (error) {
+      if (type === 'thumbnail') {
+        form.setValue('thumbnailUrl', imageUrl);
         toast({
-          title: "Error",
-          description: "Failed to save image",
-          variant: "destructive",
+          title: "Success",
+          description: "Thumbnail uploaded successfully",
         });
+      } else if (type === 'hero') {
+        form.setValue('heroImageUrl', imageUrl);
+        toast({
+          title: "Success",
+          description: "Hero image uploaded successfully",
+        });
+      } else if (type === 'before' || type === 'after' || type === 'gallery') {
+        if (isNewProject) {
+          // Store in pending images for new projects
+          setPendingImages(prev => ({
+            ...prev,
+            [type]: [...prev[type], imageUrl],
+          }));
+          
+          toast({
+            title: "Success",
+            description: `Image uploaded - will be saved when you create the project`,
+          });
+          return;
+        }
+        
+        if (projectId) {
+          const imageData: InsertProjectImage = {
+            projectId: projectId,
+            imageUrl: imageUrl,
+            imageType: type,
+            caption: null,
+            sortOrder: 0,
+          };
+          
+          await apiRequest("POST", `/api/projects/${projectId}/images`, imageData);
+          queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "images"] });
+          
+          toast({
+            title: "Success",
+            description: "Image uploaded successfully",
+          });
+        }
       }
     }
   };
@@ -616,7 +567,6 @@ export default function ProjectForm() {
                     )}
                     <ObjectUploader
                       maxNumberOfFiles={1}
-                      onGetUploadParameters={() => handleImageUpload('thumbnail')}
                       onComplete={(result) => handleImageComplete(result, 'thumbnail')}
                       buttonClassName="data-testid-upload-thumbnail"
                     >
@@ -646,7 +596,6 @@ export default function ProjectForm() {
                     )}
                     <ObjectUploader
                       maxNumberOfFiles={1}
-                      onGetUploadParameters={() => handleImageUpload('hero')}
                       onComplete={(result) => handleImageComplete(result, 'hero')}
                       buttonClassName="data-testid-upload-hero"
                     >
@@ -674,7 +623,6 @@ export default function ProjectForm() {
                         <FormLabel>Before Images</FormLabel>
                         <ObjectUploader
                           maxNumberOfFiles={100}
-                          onGetUploadParameters={() => handleImageUpload('before')}
                           onComplete={(result) => handleImageComplete(result, 'before')}
                           buttonClassName="data-testid-upload-before"
                         >
@@ -726,7 +674,6 @@ export default function ProjectForm() {
                         <FormLabel>After Images</FormLabel>
                         <ObjectUploader
                           maxNumberOfFiles={100}
-                          onGetUploadParameters={() => handleImageUpload('after')}
                           onComplete={(result) => handleImageComplete(result, 'after')}
                           buttonClassName="data-testid-upload-after"
                         >
@@ -790,7 +737,6 @@ export default function ProjectForm() {
                       <FormLabel>Additional Photos</FormLabel>
                       <ObjectUploader
                         maxNumberOfFiles={100}
-                        onGetUploadParameters={() => handleImageUpload('gallery')}
                         onComplete={(result) => handleImageComplete(result, 'gallery')}
                         buttonClassName="data-testid-upload-gallery"
                       >

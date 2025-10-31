@@ -6,10 +6,6 @@ import { useToast } from "@/hooks/use-toast";
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
-  onGetUploadParameters: () => Promise<{
-    method: "PUT";
-    url: string;
-  }>;
   onComplete?: (result: { successful: Array<{ uploadURL: string }> }) => void;
   buttonClassName?: string;
   children: ReactNode;
@@ -18,7 +14,6 @@ interface ObjectUploaderProps {
 export function ObjectUploader({
   maxNumberOfFiles = 1,
   maxFileSize = 10485760,
-  onGetUploadParameters,
   onComplete,
   buttonClassName,
   children,
@@ -60,22 +55,42 @@ export function ObjectUploader({
       }
 
       try {
-        const { url } = await onGetUploadParameters();
-        
-        const response = await fetch(url, {
-          method: "PUT",
-          body: file,
+        // Convert file to base64
+        const base64Data = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = reader.result as string;
+            // Remove data:image/...;base64, prefix
+            const base64 = result.split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        // Upload to our API
+        const response = await fetch("/api/upload", {
+          method: "POST",
           headers: {
-            "Content-Type": file.type,
+            "Content-Type": "application/json",
           },
+          credentials: "include",
+          body: JSON.stringify({
+            filename: file.name,
+            contentType: file.type,
+            data: base64Data,
+            size: file.size,
+          }),
         });
 
         if (!response.ok) {
           throw new Error("Upload failed");
         }
 
+        const data = await response.json();
+
         onComplete?.({
-          successful: [{ uploadURL: url.split('?')[0] }],
+          successful: [{ uploadURL: data.url }],
         });
       } catch (error) {
         toast({

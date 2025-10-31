@@ -4,6 +4,7 @@ import {
   projects,
   projectImages,
   siteSettings,
+  uploadedFiles,
   type User,
   type InsertUser,
   type Project,
@@ -12,6 +13,8 @@ import {
   type InsertProjectImage,
   type SiteSettings,
   type InsertSiteSettings,
+  type UploadedFile,
+  type InsertUploadedFile,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
@@ -38,6 +41,11 @@ export interface IStorage {
   // Site settings operations
   getSiteSettings(): Promise<SiteSettings | undefined>;
   updateSiteSettings(settings: Partial<InsertSiteSettings>): Promise<SiteSettings>;
+  
+  // Uploaded file operations
+  createUploadedFile(file: InsertUploadedFile): Promise<UploadedFile>;
+  getUploadedFile(id: string): Promise<UploadedFile | undefined>;
+  deleteUploadedFile(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -156,6 +164,24 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  // Uploaded file operations
+  async createUploadedFile(fileData: InsertUploadedFile): Promise<UploadedFile> {
+    const [file] = await db
+      .insert(uploadedFiles)
+      .values(fileData)
+      .returning();
+    return file;
+  }
+
+  async getUploadedFile(id: string): Promise<UploadedFile | undefined> {
+    const [file] = await db.select().from(uploadedFiles).where(eq(uploadedFiles.id, id));
+    return file;
+  }
+
+  async deleteUploadedFile(id: string): Promise<void> {
+    await db.delete(uploadedFiles).where(eq(uploadedFiles.id, id));
   }
 }
 
