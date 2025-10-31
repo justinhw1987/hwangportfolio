@@ -1,4 +1,4 @@
-// Reference: javascript_database, javascript_log_in_with_replit blueprints
+// Reference: javascript_database blueprint
 import { sql } from 'drizzle-orm';
 import {
   index,
@@ -13,7 +13,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 
-// Session storage table - required for Replit Auth
+// Session storage table - required for session-based authentication
 export const sessions = pgTable(
   "sessions",
   {
