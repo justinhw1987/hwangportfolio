@@ -133,9 +133,7 @@ export default function ProjectForm() {
         description: isNewProject ? "Project created successfully" : "Project updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      if (isNewProject) {
-        setLocation("/admin");
-      }
+      setLocation("/admin");
     },
     onError: (error: Error) => {
       if (isUnauthorizedError(error)) {
