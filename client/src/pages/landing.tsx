@@ -5,7 +5,6 @@ import type { Project, SiteSettings } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Landing() {
   const { data: projects, isLoading } = useQuery<Project[]>({
@@ -23,28 +22,27 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-lg bg-background/80 border-b border-border">
+      <header className="fixed top-0 left-0 right-0 z-50">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/">
-              <span className="text-xl font-bold font-display hover-elevate active-elevate-2 px-2 py-1 rounded-md cursor-pointer" data-testid="link-home">
+              <span className="text-xl font-bold font-display text-white hover-elevate active-elevate-2 px-2 py-1 rounded-md cursor-pointer" data-testid="link-home">
                 hwang portfolio
               </span>
             </Link>
             <nav className="flex items-center gap-6">
               <div className="hidden md:flex items-center gap-8">
                 <Link href="/">
-                  <span className="text-sm uppercase tracking-wider hover:underline decoration-2 underline-offset-8 transition-all cursor-pointer" data-testid="link-nav-work">
+                  <span className="text-sm uppercase tracking-wider text-white/90 hover:text-white hover:underline decoration-2 underline-offset-8 transition-all cursor-pointer" data-testid="link-nav-work">
                     Work
                   </span>
                 </Link>
                 <Link href="/admin">
-                  <span className="text-sm uppercase tracking-wider hover:underline decoration-2 underline-offset-8 transition-all cursor-pointer" data-testid="link-nav-admin">
+                  <span className="text-sm uppercase tracking-wider text-white/90 hover:text-white hover:underline decoration-2 underline-offset-8 transition-all cursor-pointer" data-testid="link-nav-admin">
                     Admin
                   </span>
                 </Link>
               </div>
-              <ThemeToggle />
             </nav>
           </div>
         </div>
