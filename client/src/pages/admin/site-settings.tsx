@@ -76,13 +76,18 @@ export default function SiteSettingsPage() {
         const response = await fetch("/api/images", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ uploadURL }),
+          body: JSON.stringify({ imageURL: uploadURL }),
         });
         
         if (!response.ok) throw new Error("Failed to process upload");
         
         const data = await response.json();
         setHeroImageUrl(data.objectPath);
+        
+        toast({
+          title: "Success",
+          description: "Image uploaded successfully. Click 'Save Settings' to apply.",
+        });
       } catch (error) {
         toast({
           title: "Error",

@@ -199,25 +199,44 @@ export default function ProjectForm() {
         
         if (type === 'thumbnail') {
           form.setValue('thumbnailUrl', data.objectPath);
+          toast({
+            title: "Success",
+            description: "Thumbnail uploaded successfully",
+          });
         } else if (type === 'hero') {
           form.setValue('heroImageUrl', data.objectPath);
-        } else if (!isNewProject && projectId) {
-          const imageData: InsertProjectImage = {
-            projectId: projectId,
-            imageUrl: data.objectPath,
-            imageType: type,
-            caption: null,
-            sortOrder: 0,
-          };
+          toast({
+            title: "Success",
+            description: "Hero image uploaded successfully",
+          });
+        } else if (type === 'before' || type === 'after' || type === 'gallery') {
+          if (isNewProject) {
+            toast({
+              title: "Save Project First",
+              description: "Please save the project before adding before/after or gallery images",
+              variant: "destructive",
+            });
+            return;
+          }
           
-          await apiRequest("POST", `/api/projects/${projectId}/images`, imageData);
-          queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "images"] });
+          if (projectId) {
+            const imageData: InsertProjectImage = {
+              projectId: projectId,
+              imageUrl: data.objectPath,
+              imageType: type,
+              caption: null,
+              sortOrder: 0,
+            };
+            
+            await apiRequest("POST", `/api/projects/${projectId}/images`, imageData);
+            queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "images"] });
+            
+            toast({
+              title: "Success",
+              description: "Image uploaded successfully",
+            });
+          }
         }
-        
-        toast({
-          title: "Success",
-          description: "Image uploaded successfully",
-        });
       } catch (error) {
         toast({
           title: "Error",
@@ -589,26 +608,31 @@ export default function ProjectForm() {
               </CardContent>
             </Card>
 
-            {!isNewProject && (
-              <>
-                {/* Before/After Images */}
-                <Card>
+            {/* Before/After Images */}
+            <Card>
                   <CardHeader>
                     <CardTitle>Before & After Images</CardTitle>
+                    {isNewProject && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Save the project first to add before/after images
+                      </p>
+                    )}
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <FormLabel>Before Images</FormLabel>
-                        <ObjectUploader
-                          maxNumberOfFiles={100}
-                          onGetUploadParameters={() => handleImageUpload('before')}
-                          onComplete={(result) => handleImageComplete(result, 'before')}
-                          buttonClassName="data-testid-upload-before"
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Before
-                        </ObjectUploader>
+                        {!isNewProject && (
+                          <ObjectUploader
+                            maxNumberOfFiles={100}
+                            onGetUploadParameters={() => handleImageUpload('before')}
+                            onComplete={(result) => handleImageComplete(result, 'before')}
+                            buttonClassName="data-testid-upload-before"
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add Before
+                          </ObjectUploader>
+                        )}
                       </div>
                       <DndContext
                         sensors={sensors}
@@ -632,15 +656,17 @@ export default function ProjectForm() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <FormLabel>After Images</FormLabel>
-                        <ObjectUploader
-                          maxNumberOfFiles={100}
-                          onGetUploadParameters={() => handleImageUpload('after')}
-                          onComplete={(result) => handleImageComplete(result, 'after')}
-                          buttonClassName="data-testid-upload-after"
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add After
-                        </ObjectUploader>
+                        {!isNewProject && (
+                          <ObjectUploader
+                            maxNumberOfFiles={100}
+                            onGetUploadParameters={() => handleImageUpload('after')}
+                            onComplete={(result) => handleImageComplete(result, 'after')}
+                            buttonClassName="data-testid-upload-after"
+                          >
+                            <Plus className="mr-2 h-4 w-4" />
+                            Add After
+                          </ObjectUploader>
+                        )}
                       </div>
                       <DndContext
                         sensors={sensors}
@@ -667,19 +693,26 @@ export default function ProjectForm() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Gallery Images</CardTitle>
+                    {isNewProject && (
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Save the project first to add gallery images
+                      </p>
+                    )}
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between">
                       <FormLabel>Additional Photos</FormLabel>
-                      <ObjectUploader
-                        maxNumberOfFiles={100}
-                        onGetUploadParameters={() => handleImageUpload('gallery')}
-                        onComplete={(result) => handleImageComplete(result, 'gallery')}
-                        buttonClassName="data-testid-upload-gallery"
-                      >
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add Gallery Images
-                      </ObjectUploader>
+                      {!isNewProject && (
+                        <ObjectUploader
+                          maxNumberOfFiles={100}
+                          onGetUploadParameters={() => handleImageUpload('gallery')}
+                          onComplete={(result) => handleImageComplete(result, 'gallery')}
+                          buttonClassName="data-testid-upload-gallery"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Gallery Images
+                        </ObjectUploader>
+                      )}
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       {galleryImages.map((image) => (
@@ -700,8 +733,6 @@ export default function ProjectForm() {
                     </div>
                   </CardContent>
                 </Card>
-              </>
-            )}
 
             {/* Actions */}
             <div className="flex items-center gap-4">
