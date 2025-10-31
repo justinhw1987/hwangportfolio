@@ -116,8 +116,8 @@ export default function ProjectForm() {
         description: isNewProject ? "Project created successfully" : "Project updated successfully",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      if (isNewProject && data.id) {
-        setLocation(`/admin/projects/${data.id}`);
+      if (isNewProject) {
+        setLocation("/admin");
       }
     },
     onError: (error: Error) => {
