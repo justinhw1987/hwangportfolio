@@ -133,7 +133,8 @@ export default function ProjectForm() {
       };
 
       if (isNewProject) {
-        const newProject = await apiRequest("POST", "/api/projects", projectData);
+        const response = await apiRequest("POST", "/api/projects", projectData);
+        const newProject = await response.json();
         
         // Save pending images if any
         const allPendingImages = [
