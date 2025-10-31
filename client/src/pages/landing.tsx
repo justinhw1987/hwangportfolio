@@ -24,7 +24,7 @@ export default function Landing() {
           <div className="flex items-center justify-between h-16">
             <Link href="/">
               <span className="text-xl font-bold font-display hover-elevate active-elevate-2 px-2 py-1 rounded-md cursor-pointer" data-testid="link-home">
-                Portfolio
+                hwang portfolio
               </span>
             </Link>
             <nav className="flex items-center gap-6">
