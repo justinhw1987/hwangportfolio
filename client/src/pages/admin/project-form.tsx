@@ -53,6 +53,17 @@ export default function ProjectForm() {
   const [, params] = useRoute("/admin/projects/:id");
   const projectId = params?.id;
   const isNewProject = projectId === 'new';
+  
+  // State for pending images on new projects
+  const [pendingImages, setPendingImages] = useState<{
+    before: string[];
+    after: string[];
+    gallery: string[];
+  }>({
+    before: [],
+    after: [],
+    gallery: [],
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -122,7 +133,29 @@ export default function ProjectForm() {
       };
 
       if (isNewProject) {
-        return await apiRequest("POST", "/api/projects", projectData);
+        const newProject = await apiRequest("POST", "/api/projects", projectData);
+        
+        // Save pending images if any
+        const allPendingImages = [
+          ...pendingImages.before.map(url => ({ url, type: 'before' as const })),
+          ...pendingImages.after.map(url => ({ url, type: 'after' as const })),
+          ...pendingImages.gallery.map(url => ({ url, type: 'gallery' as const })),
+        ];
+        
+        if (allPendingImages.length > 0) {
+          for (const { url, type } of allPendingImages) {
+            const imageData: InsertProjectImage = {
+              projectId: newProject.id,
+              imageUrl: url,
+              imageType: type,
+              caption: null,
+              sortOrder: 0,
+            };
+            await apiRequest("POST", `/api/projects/${newProject.id}/images`, imageData);
+          }
+        }
+        
+        return newProject;
       } else {
         return await apiRequest("PUT", `/api/projects/${projectId}`, projectData);
       }
@@ -211,10 +244,15 @@ export default function ProjectForm() {
           });
         } else if (type === 'before' || type === 'after' || type === 'gallery') {
           if (isNewProject) {
+            // Store in pending images for new projects
+            setPendingImages(prev => ({
+              ...prev,
+              [type]: [...prev[type], data.objectPath],
+            }));
+            
             toast({
-              title: "Save Project First",
-              description: "Please save the project before adding before/after or gallery images",
-              variant: "destructive",
+              title: "Success",
+              description: `Image uploaded - will be saved when you create the project`,
             });
             return;
           }
@@ -245,6 +283,17 @@ export default function ProjectForm() {
         });
       }
     }
+  };
+
+  const deletePendingImage = (type: 'before' | 'after' | 'gallery', url: string) => {
+    setPendingImages(prev => ({
+      ...prev,
+      [type]: prev[type].filter(imgUrl => imgUrl !== url),
+    }));
+    toast({
+      title: "Success",
+      description: "Pending image removed",
+    });
   };
 
   const deleteImageMutation = useMutation({
@@ -612,9 +661,9 @@ export default function ProjectForm() {
             <Card>
                   <CardHeader>
                     <CardTitle>Before & After Images</CardTitle>
-                    {isNewProject && (
+                    {isNewProject && pendingImages.before.length + pendingImages.after.length > 0 && (
                       <p className="text-sm text-muted-foreground mt-2">
-                        Save the project first to add before/after images
+                        {pendingImages.before.length + pendingImages.after.length} image(s) will be saved when you create the project
                       </p>
                     )}
                   </CardHeader>
@@ -622,79 +671,105 @@ export default function ProjectForm() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <FormLabel>Before Images</FormLabel>
-                        {isNewProject ? (
-                          <Button variant="outline" size="sm" disabled data-testid="button-upload-before-disabled">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Before
-                          </Button>
-                        ) : (
-                          <ObjectUploader
-                            maxNumberOfFiles={100}
-                            onGetUploadParameters={() => handleImageUpload('before')}
-                            onComplete={(result) => handleImageComplete(result, 'before')}
-                            buttonClassName="data-testid-upload-before"
-                          >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Before
-                          </ObjectUploader>
-                        )}
+                        <ObjectUploader
+                          maxNumberOfFiles={100}
+                          onGetUploadParameters={() => handleImageUpload('before')}
+                          onComplete={(result) => handleImageComplete(result, 'before')}
+                          buttonClassName="data-testid-upload-before"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Before
+                        </ObjectUploader>
                       </div>
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={(event) => handleDragEnd(event, 'before')}
-                      >
-                        <SortableContext items={beforeImages.map(img => img.id)} strategy={verticalListSortingStrategy}>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {beforeImages.map((image) => (
-                              <SortableImage
-                                key={image.id}
-                                image={image}
-                                onDelete={() => deleteImageMutation.mutate(image.id)}
-                              />
-                            ))}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
+                      {isNewProject ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {pendingImages.before.map((url, index) => (
+                            <div key={index} className="relative group" data-testid={`pending-image-before-${index}`}>
+                              <img src={url} alt="Before (pending)" className="w-full aspect-square object-cover rounded" />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute -top-2 -right-2"
+                                onClick={() => deletePendingImage('before', url)}
+                                data-testid={`button-delete-pending-before-${index}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={(event) => handleDragEnd(event, 'before')}
+                        >
+                          <SortableContext items={beforeImages.map(img => img.id)} strategy={verticalListSortingStrategy}>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              {beforeImages.map((image) => (
+                                <SortableImage
+                                  key={image.id}
+                                  image={image}
+                                  onDelete={() => deleteImageMutation.mutate(image.id)}
+                                />
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
+                      )}
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <FormLabel>After Images</FormLabel>
-                        {isNewProject ? (
-                          <Button variant="outline" size="sm" disabled data-testid="button-upload-after-disabled">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add After
-                          </Button>
-                        ) : (
-                          <ObjectUploader
-                            maxNumberOfFiles={100}
-                            onGetUploadParameters={() => handleImageUpload('after')}
-                            onComplete={(result) => handleImageComplete(result, 'after')}
-                            buttonClassName="data-testid-upload-after"
-                          >
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add After
-                          </ObjectUploader>
-                        )}
+                        <ObjectUploader
+                          maxNumberOfFiles={100}
+                          onGetUploadParameters={() => handleImageUpload('after')}
+                          onComplete={(result) => handleImageComplete(result, 'after')}
+                          buttonClassName="data-testid-upload-after"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add After
+                        </ObjectUploader>
                       </div>
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={(event) => handleDragEnd(event, 'after')}
-                      >
-                        <SortableContext items={afterImages.map(img => img.id)} strategy={verticalListSortingStrategy}>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {afterImages.map((image) => (
-                              <SortableImage
-                                key={image.id}
-                                image={image}
-                                onDelete={() => deleteImageMutation.mutate(image.id)}
-                              />
-                            ))}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
+                      {isNewProject ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {pendingImages.after.map((url, index) => (
+                            <div key={index} className="relative group" data-testid={`pending-image-after-${index}`}>
+                              <img src={url} alt="After (pending)" className="w-full aspect-square object-cover rounded" />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                className="absolute -top-2 -right-2"
+                                onClick={() => deletePendingImage('after', url)}
+                                data-testid={`button-delete-pending-after-${index}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={(event) => handleDragEnd(event, 'after')}
+                        >
+                          <SortableContext items={afterImages.map(img => img.id)} strategy={verticalListSortingStrategy}>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              {afterImages.map((image) => (
+                                <SortableImage
+                                  key={image.id}
+                                  image={image}
+                                  onDelete={() => deleteImageMutation.mutate(image.id)}
+                                />
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -703,48 +778,59 @@ export default function ProjectForm() {
                 <Card>
                   <CardHeader>
                     <CardTitle>Gallery Images</CardTitle>
-                    {isNewProject && (
+                    {isNewProject && pendingImages.gallery.length > 0 && (
                       <p className="text-sm text-muted-foreground mt-2">
-                        Save the project first to add gallery images
+                        {pendingImages.gallery.length} gallery image(s) will be saved when you create the project
                       </p>
                     )}
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div className="flex items-center justify-between">
                       <FormLabel>Additional Photos</FormLabel>
-                      {isNewProject ? (
-                        <Button variant="outline" size="sm" disabled data-testid="button-upload-gallery-disabled">
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Gallery Images
-                        </Button>
-                      ) : (
-                        <ObjectUploader
-                          maxNumberOfFiles={100}
-                          onGetUploadParameters={() => handleImageUpload('gallery')}
-                          onComplete={(result) => handleImageComplete(result, 'gallery')}
-                          buttonClassName="data-testid-upload-gallery"
-                        >
-                          <Plus className="mr-2 h-4 w-4" />
-                          Add Gallery Images
-                        </ObjectUploader>
-                      )}
+                      <ObjectUploader
+                        maxNumberOfFiles={100}
+                        onGetUploadParameters={() => handleImageUpload('gallery')}
+                        onComplete={(result) => handleImageComplete(result, 'gallery')}
+                        buttonClassName="data-testid-upload-gallery"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Gallery Images
+                      </ObjectUploader>
                     </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {galleryImages.map((image) => (
-                        <div key={image.id} className="relative" data-testid={`image-gallery-${image.id}`}>
-                          <img src={image.imageUrl} alt="Gallery" className="w-full aspect-square object-cover rounded" />
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            className="absolute -top-2 -right-2"
-                            onClick={() => deleteImageMutation.mutate(image.id)}
-                            data-testid={`button-delete-gallery-${image.id}`}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                      {isNewProject ? (
+                        pendingImages.gallery.map((url, index) => (
+                          <div key={index} className="relative" data-testid={`pending-image-gallery-${index}`}>
+                            <img src={url} alt="Gallery (pending)" className="w-full aspect-square object-cover rounded" />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute -top-2 -right-2"
+                              onClick={() => deletePendingImage('gallery', url)}
+                              data-testid={`button-delete-pending-gallery-${index}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))
+                      ) : (
+                        galleryImages.map((image) => (
+                          <div key={image.id} className="relative" data-testid={`image-gallery-${image.id}`}>
+                            <img src={image.imageUrl} alt="Gallery" className="w-full aspect-square object-cover rounded" />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="icon"
+                              className="absolute -top-2 -right-2"
+                              onClick={() => deleteImageMutation.mutate(image.id)}
+                              data-testid={`button-delete-gallery-${image.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </CardContent>
                 </Card>
