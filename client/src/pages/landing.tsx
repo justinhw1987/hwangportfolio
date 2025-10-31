@@ -56,7 +56,7 @@ export default function Landing() {
                   Design and build
                 </h1>
                 <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-lg">
-                  documenting projects we have completed over the years
+                  Documenting projects we have completed over the years
                 </p>
               </div>
               <a href="#projects">
