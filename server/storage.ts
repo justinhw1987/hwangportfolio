@@ -30,6 +30,7 @@ export interface IStorage {
   getProjectImages(projectId: string): Promise<ProjectImage[]>;
   createProjectImage(image: InsertProjectImage): Promise<ProjectImage>;
   deleteProjectImage(id: string): Promise<void>;
+  updateProjectImageOrder(id: string, sortOrder: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -109,6 +110,13 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProjectImage(id: string): Promise<void> {
     await db.delete(projectImages).where(eq(projectImages.id, id));
+  }
+
+  async updateProjectImageOrder(id: string, sortOrder: number): Promise<void> {
+    await db
+      .update(projectImages)
+      .set({ sortOrder })
+      .where(eq(projectImages.id, id));
   }
 }
 

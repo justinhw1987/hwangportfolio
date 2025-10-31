@@ -221,6 +221,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/projects/:projectId/images/:imageId", isAuthenticated, async (req, res) => {
+    try {
+      const { sortOrder } = req.body;
+      if (typeof sortOrder !== 'number') {
+        return res.status(400).json({ message: "sortOrder must be a number" });
+      }
+      await storage.updateProjectImageOrder(req.params.imageId, sortOrder);
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error updating project image order:", error);
+      res.status(500).json({ message: "Failed to update image order" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

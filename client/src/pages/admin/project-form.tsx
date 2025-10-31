@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation, Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowLeft, Upload, Trash2, Loader2, Plus } from "lucide-react";
+import { ArrowLeft, Upload, Trash2, Loader2, Plus, GripVertical } from "lucide-react";
 import type { UploadResult } from "@uppy/core";
 import type { Project, ProjectImage, InsertProject, InsertProjectImage } from "@shared/schema";
 import { insertProjectSchema } from "@shared/schema";
@@ -20,6 +20,23 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { z } from "zod";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const formSchema = insertProjectSchema.extend({
   year: z.string().optional(),
@@ -237,6 +254,41 @@ export default function ProjectForm() {
     },
   });
 
+  const updateImageOrderMutation = useMutation({
+    mutationFn: async ({ imageId, sortOrder }: { imageId: string; sortOrder: number }) => {
+      return await apiRequest("PATCH", `/api/projects/${projectId}/images/${imageId}`, { sortOrder });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "images"] });
+    },
+  });
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent, imageType: 'before' | 'after') => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const imageList = imageType === 'before' ? beforeImages : afterImages;
+    const oldIndex = imageList.findIndex(img => img.id === active.id);
+    const newIndex = imageList.findIndex(img => img.id === over.id);
+
+    const reorderedImages = arrayMove(imageList, oldIndex, newIndex);
+    
+    // Update sort order for all affected images
+    reorderedImages.forEach((img, index) => {
+      if (img.sortOrder !== index) {
+        updateImageOrderMutation.mutate({ imageId: img.id, sortOrder: index });
+      }
+    });
+  };
+
   if (authLoading || (!isNewProject && projectLoading)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -249,12 +301,55 @@ export default function ProjectForm() {
     return null;
   }
 
-  const beforeImages = images?.filter(img => img.imageType === 'before') || [];
-  const afterImages = images?.filter(img => img.imageType === 'after') || [];
+  const beforeImages = (images?.filter(img => img.imageType === 'before') || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+  const afterImages = (images?.filter(img => img.imageType === 'after') || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   const galleryImages = images?.filter(img => img.imageType === 'gallery') || [];
 
   const thumbnailUrl = form.watch('thumbnailUrl');
   const heroImageUrl = form.watch('heroImageUrl');
+
+  function SortableImage({ image, onDelete }: { image: ProjectImage; onDelete: () => void }) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: image.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className="relative group"
+        data-testid={`image-${image.imageType}-${image.id}`}
+      >
+        <div className="absolute top-2 left-2 z-10 cursor-grab active:cursor-grabbing" {...attributes} {...listeners}>
+          <div className="bg-background/80 backdrop-blur-sm rounded p-1 hover-elevate">
+            <GripVertical className="h-4 w-4 text-foreground" />
+          </div>
+        </div>
+        <img src={image.imageUrl} alt={image.imageType} className="w-full aspect-square object-cover rounded" />
+        <Button
+          type="button"
+          variant="destructive"
+          size="icon"
+          className="absolute -top-2 -right-2"
+          onClick={onDelete}
+          data-testid={`button-delete-${image.imageType}-${image.id}`}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -517,23 +612,23 @@ export default function ProjectForm() {
                           Add Before
                         </ObjectUploader>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {beforeImages.map((image) => (
-                          <div key={image.id} className="relative" data-testid={`image-before-${image.id}`}>
-                            <img src={image.imageUrl} alt="Before" className="w-full aspect-square object-cover rounded" />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon"
-                              className="absolute -top-2 -right-2"
-                              onClick={() => deleteImageMutation.mutate(image.id)}
-                              data-testid={`button-delete-before-${image.id}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={(event) => handleDragEnd(event, 'before')}
+                      >
+                        <SortableContext items={beforeImages.map(img => img.id)} strategy={verticalListSortingStrategy}>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {beforeImages.map((image) => (
+                              <SortableImage
+                                key={image.id}
+                                image={image}
+                                onDelete={() => deleteImageMutation.mutate(image.id)}
+                              />
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </SortableContext>
+                      </DndContext>
                     </div>
 
                     <div className="space-y-2">
@@ -549,23 +644,23 @@ export default function ProjectForm() {
                           Add After
                         </ObjectUploader>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {afterImages.map((image) => (
-                          <div key={image.id} className="relative" data-testid={`image-after-${image.id}`}>
-                            <img src={image.imageUrl} alt="After" className="w-full aspect-square object-cover rounded" />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon"
-                              className="absolute -top-2 -right-2"
-                              onClick={() => deleteImageMutation.mutate(image.id)}
-                              data-testid={`button-delete-after-${image.id}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={(event) => handleDragEnd(event, 'after')}
+                      >
+                        <SortableContext items={afterImages.map(img => img.id)} strategy={verticalListSortingStrategy}>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {afterImages.map((image) => (
+                              <SortableImage
+                                key={image.id}
+                                image={image}
+                                onDelete={() => deleteImageMutation.mutate(image.id)}
+                              />
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </SortableContext>
+                      </DndContext>
                     </div>
                   </CardContent>
                 </Card>
