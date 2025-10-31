@@ -53,13 +53,8 @@ export default function Landing() {
             <div className="lg:col-span-5 space-y-8">
               <div className="space-y-4">
                 <h1 className="text-6xl lg:text-7xl font-bold font-display tracking-tight" data-testid="text-hero-title">
-                  Creative
-                  <br />
-                  Transformations
+                  Design and build
                 </h1>
-                <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-lg">
-                  Showcasing design excellence through powerful before & after stories
-                </p>
               </div>
               <a href="#projects">
                 <Button size="lg" className="rounded-full px-8 group" data-testid="button-view-projects">
@@ -169,9 +164,6 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
               <h3 className="text-xl font-bold font-display mb-2">hwang portfolio</h3>
-              <p className="text-sm text-muted-foreground">
-                Showcasing creative transformations
-              </p>
             </div>
             <div className="flex items-center justify-start md:justify-end">
               <p className="text-sm text-muted-foreground">
