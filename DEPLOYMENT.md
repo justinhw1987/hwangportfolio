@@ -217,6 +217,63 @@ Railway will detect the push and redeploy automatically! 🚀
 - `SESSION_SECRET` should be a 32+ character random string
 - All variables must be set in Railway's Variables tab
 
+### Image Upload Failures
+
+**Error**: "Upload failed" when trying to upload images in the admin panel
+
+**Causes & Solutions**:
+
+1. **Not Logged In / Session Lost**
+   - **Symptom**: Can access admin pages but uploads fail
+   - **Check**: Open browser DevTools → Network tab → Try upload → Look for 401 Unauthorized on `/api/upload`
+   - **Solution**: Log out and log back in
+   - **Prevention**: Make sure `SESSION_SECRET` is set in Railway and redeploy
+
+2. **Session Cookie Not Persisting**
+   - **Symptom**: Keep getting logged out, uploads fail intermittently  
+   - **Check**: Browser DevTools → Application tab → Cookies → Look for `connect.sid` cookie
+   - **Solutions**:
+     - Verify `NODE_ENV=production` is set in Railway
+     - Verify `SESSION_SECRET` is a strong 32+ character string
+     - Check that Railway URL uses HTTPS (not HTTP)
+     - Try clearing browser cookies and logging in again
+
+3. **Database Connection Issues**
+   - **Symptom**: Login works but uploads fail with no error message
+   - **Check**: Railway deployment logs for database errors
+   - **Solution**: Verify `DATABASE_URL` is properly linked (see "Link Database to Your Application" section)
+
+4. **File Size Too Large**
+   - **Symptom**: Upload fails only for large images
+   - **Limit**: Maximum 10MB per image
+   - **Solution**: Compress images before uploading or resize them
+
+5. **Sessions Table Missing**
+   - **Symptom**: Can't log in or stay logged in
+   - **Check**: Connect to database and verify `sessions` table exists
+   - **Solution**: 
+     ```bash
+     # Push schema again
+     export DATABASE_URL="your_railway_db_url"
+     npm run db:push
+     ```
+
+**Debugging Steps**:
+
+1. **Check Railway Logs**: Go to Railway → Your App → Deployments → Click latest → View logs
+2. Look for these log messages:
+   - `Uploading file: filename.png (image/png, 12345 bytes)` ← Upload started
+   - `File uploaded successfully: <uuid>` ← Upload succeeded  
+   - `Error uploading file:` ← Upload failed (check error details)
+3. **Test Authentication**: Try accessing `/api/auth/user` - should return user data, not 401
+4. **Test Locally**: If it works on Replit but not Railway, it's a deployment configuration issue
+
+**Working Correctly When**:
+- You can log in and stay logged in
+- Browser has `connect.sid` cookie after login
+- Uploads show success toast notification
+- Images appear in project preview
+
 ## Need Help?
 
 - Railway Docs: https://docs.railway.app
