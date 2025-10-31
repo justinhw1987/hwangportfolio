@@ -75,7 +75,7 @@ export default function ProjectForm() {
       client: "",
       role: "",
       tools: "",
-      status: "draft",
+      status: "published",
       featured: 0,
       thumbnailUrl: "",
       heroImageUrl: "",
