@@ -1,14 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { ArrowLeft, Loader2, ArrowRight } from "lucide-react";
+import { useState } from "react";
 import type { Project, ProjectImage } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ImageLightbox } from "@/components/ImageLightbox";
 
 export default function ProjectDetail() {
   const [, params] = useRoute("/project/:id");
   const projectId = params?.id;
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const { data: project, isLoading: projectLoading } = useQuery<Project>({
     queryKey: ["/api/projects", projectId],
@@ -53,6 +57,21 @@ export default function ProjectDetail() {
 
   const publishedProjects = allProjects?.filter(p => p.status === 'published' && p.id !== projectId) || [];
   const nextProject = publishedProjects[0];
+
+  // Combine all images for lightbox
+  const allImages = [
+    ...beforeImages.map(img => ({ url: img.imageUrl, caption: img.caption || undefined })),
+    ...afterImages.map(img => ({ url: img.imageUrl, caption: img.caption || undefined })),
+    ...galleryImages.map(img => ({ url: img.imageUrl, caption: img.caption || undefined }))
+  ];
+
+  const openLightbox = (imageUrl: string) => {
+    const index = allImages.findIndex(img => img.url === imageUrl);
+    if (index !== -1) {
+      setLightboxIndex(index);
+      setLightboxOpen(true);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -144,7 +163,11 @@ export default function ProjectDetail() {
                 {beforeImages.length > 0 ? (
                   beforeImages.map((image, idx) => (
                     <Card key={image.id} className="overflow-hidden" data-testid={`card-before-${idx}`}>
-                      <div className="aspect-[4/3]">
+                      <div 
+                        className="aspect-[4/3] cursor-pointer hover-elevate active-elevate-2 transition-all"
+                        onClick={() => openLightbox(image.imageUrl)}
+                        data-testid={`img-before-${idx}`}
+                      >
                         <img 
                           src={image.imageUrl} 
                           alt={image.caption || `Before ${idx + 1}`}
@@ -173,7 +196,11 @@ export default function ProjectDetail() {
                 {afterImages.length > 0 ? (
                   afterImages.map((image, idx) => (
                     <Card key={image.id} className="overflow-hidden" data-testid={`card-after-${idx}`}>
-                      <div className="aspect-[4/3]">
+                      <div 
+                        className="aspect-[4/3] cursor-pointer hover-elevate active-elevate-2 transition-all"
+                        onClick={() => openLightbox(image.imageUrl)}
+                        data-testid={`img-after-${idx}`}
+                      >
                         <img 
                           src={image.imageUrl} 
                           alt={image.caption || `After ${idx + 1}`}
@@ -209,7 +236,11 @@ export default function ProjectDetail() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {galleryImages.map((image, idx) => (
                 <Card key={image.id} className="overflow-hidden hover-elevate active-elevate-2 transition-all" data-testid={`card-gallery-${idx}`}>
-                  <div className="aspect-[4/3]">
+                  <div 
+                    className="aspect-[4/3] cursor-pointer"
+                    onClick={() => openLightbox(image.imageUrl)}
+                    data-testid={`img-gallery-${idx}`}
+                  >
                     <img 
                       src={image.imageUrl} 
                       alt={image.caption || `Gallery ${idx + 1}`}
@@ -258,6 +289,14 @@ export default function ProjectDetail() {
           </Link>
         </section>
       )}
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={allImages}
+        initialIndex={lightboxIndex}
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+      />
     </div>
   );
 }
