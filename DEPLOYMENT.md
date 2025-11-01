@@ -243,10 +243,15 @@ Railway will detect the push and redeploy automatically! 🚀
    - **Check**: Railway deployment logs for database errors
    - **Solution**: Verify `DATABASE_URL` is properly linked (see "Link Database to Your Application" section)
 
-4. **File Size Too Large**
-   - **Symptom**: Upload fails only for large images
-   - **Limit**: Maximum 10MB per image
-   - **Solution**: Compress images before uploading or resize them
+4. **File Size Too Large (Payload Too Large Error)**
+   - **Symptom**: Upload fails with "PayloadTooLargeError: request entity too large"
+   - **Cause**: Image file is too large when base64-encoded
+   - **Current Limit**: 50MB (handles ~35MB original images after base64 encoding)
+   - **Solutions**:
+     - Compress images before uploading
+     - Resize images to reasonable dimensions (e.g., 2000px max width for hero images)
+     - Convert to more efficient formats (WebP, optimized JPG)
+   - **Note**: If you need larger limits, you can increase it in `server/index.ts` by changing the `limit` value in `express.json()`
 
 5. **Sessions Table Missing**
    - **Symptom**: Can't log in or stay logged in
