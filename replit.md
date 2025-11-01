@@ -25,6 +25,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**November 1, 2025:**
+1. **Image Lightbox Feature:**
+   - Created ImageLightbox component with full keyboard navigation support
+   - Integrated lightbox into project detail pages for all image types (before/after/gallery)
+   - Supports keyboard arrow keys (left/right) for image navigation
+   - Includes previous/next buttons for mouse navigation
+   - Shows image counter and captions
+   - Closes with Escape key or close button
+   - Added accessibility support with aria-labels and visually hidden dialog descriptions
+
 **October 31, 2025:**
 1. Migrated authentication system from Replit OAuth to username/password authentication
    - Implemented passport-local strategy with bcrypt password hashing
