@@ -61,14 +61,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { filename, contentType, data, size } = req.body;
       
+      console.log("Upload request received:", {
+        filename,
+        contentType,
+        size,
+        dataLength: data?.length,
+        userId: req.user?.id,
+        hasAuth: !!req.user,
+      });
+      
       if (!filename || !contentType || !data) {
-        console.error("Upload failed: Missing required fields", { filename, contentType, hasData: !!data });
+        console.error("Upload failed: Missing required fields", { 
+          filename, 
+          contentType, 
+          hasData: !!data,
+          dataLength: data?.length 
+        });
         return res.status(400).json({ error: "Missing required fields" });
       }
 
       const userId = req.user?.id;
       
       console.log(`Uploading file: ${filename} (${contentType}, ${size} bytes) for user ${userId}`);
+      console.log(`Base64 data length: ${data.length} characters`);
       
       const file = await storage.createUploadedFile({
         filename,
@@ -88,9 +103,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error uploading file:", error);
       console.error("Error details:", {
         message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined,
       });
-      res.status(500).json({ error: "Failed to upload file" });
+      res.status(500).json({ 
+        error: "Failed to upload file",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
     }
   });
 
