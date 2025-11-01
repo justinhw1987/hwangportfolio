@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface ImageLightboxProps {
   images: Array<{ url: string; caption?: string }>;
@@ -52,13 +53,20 @@ export function ImageLightbox({ images, initialIndex, isOpen, onClose }: ImageLi
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/95 border-none">
+        <VisuallyHidden>
+          <DialogTitle>Image Viewer</DialogTitle>
+          <DialogDescription>
+            {currentImage.caption || `Viewing image ${currentIndex + 1} of ${images.length}`}
+          </DialogDescription>
+        </VisuallyHidden>
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Close button */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onClose}
-            className="absolute top-4 right-4 z-50 text-white hover:bg-white/10"
+            className="absolute top-4 right-4 z-50 text-white"
+            aria-label="Close image viewer"
             data-testid="button-close-lightbox"
           >
             <X className="h-6 w-6" />
@@ -70,7 +78,8 @@ export function ImageLightbox({ images, initialIndex, isOpen, onClose }: ImageLi
               variant="ghost"
               size="icon"
               onClick={goToPrevious}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/10 h-12 w-12"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white h-12 w-12"
+              aria-label="Previous image"
               data-testid="button-previous"
             >
               <ChevronLeft className="h-8 w-8" />
@@ -107,7 +116,8 @@ export function ImageLightbox({ images, initialIndex, isOpen, onClose }: ImageLi
               variant="ghost"
               size="icon"
               onClick={goToNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/10 h-12 w-12"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white h-12 w-12"
+              aria-label="Next image"
               data-testid="button-next"
             >
               <ChevronRight className="h-8 w-8" />
