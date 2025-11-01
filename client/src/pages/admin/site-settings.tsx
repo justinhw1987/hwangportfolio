@@ -43,58 +43,15 @@ export default function SiteSettingsPage() {
     },
   });
 
-  const handleImageUpload = async () => {
-    try {
-      const response = await fetch("/api/objects/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ directory: "public" }),
-      });
-      
-      if (!response.ok) throw new Error("Failed to get upload URL");
-      
-      const data = await response.json();
-      return {
-        method: "PUT" as const,
-        url: data.uploadURL,
-      };
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to initiate upload",
-        variant: "destructive",
-      });
-      throw error;
-    }
-  };
-
   const handleImageComplete = async (result: { successful: Array<{ uploadURL: string }> }) => {
     if (result.successful && result.successful.length > 0) {
       const uploadURL = result.successful[0].uploadURL;
+      setHeroImageUrl(uploadURL);
       
-      try {
-        const response = await fetch("/api/images", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageURL: uploadURL }),
-        });
-        
-        if (!response.ok) throw new Error("Failed to process upload");
-        
-        const data = await response.json();
-        setHeroImageUrl(data.objectPath);
-        
-        toast({
-          title: "Success",
-          description: "Image uploaded successfully. Click 'Save Settings' to apply.",
-        });
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "Failed to process uploaded image",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully. Click 'Save Settings' to apply.",
+      });
     }
   };
 
@@ -166,7 +123,6 @@ export default function SiteSettingsPage() {
               <div className="space-y-4">
                 <ObjectUploader
                   maxNumberOfFiles={1}
-                  onGetUploadParameters={handleImageUpload}
                   onComplete={handleImageComplete}
                   buttonClassName="data-testid-upload-hero"
                 >

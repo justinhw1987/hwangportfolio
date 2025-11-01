@@ -50,6 +50,7 @@ Preferred communication style: Simple, everyday language.
    - Increased Express body size limit to 50MB to handle base64-encoded images
    - Added detailed upload error logging for better debugging
    - Enhanced upload troubleshooting documentation
+   - Fixed site-settings hero image upload by removing non-existent /api/images endpoint call
 
 ## System Architecture
 
