@@ -35,6 +35,7 @@ import {
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
+  rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
@@ -288,12 +289,12 @@ export default function ProjectForm() {
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent, imageType: 'before' | 'after') => {
+  const handleDragEnd = (event: DragEndEvent, imageType: 'before' | 'after' | 'gallery') => {
     const { active, over } = event;
 
     if (!over || active.id === over.id) return;
 
-    const imageList = imageType === 'before' ? beforeImages : afterImages;
+    const imageList = imageType === 'before' ? beforeImages : imageType === 'after' ? afterImages : galleryImages;
     const oldIndex = imageList.findIndex(img => img.id === active.id);
     const newIndex = imageList.findIndex(img => img.id === over.id);
 
@@ -321,7 +322,7 @@ export default function ProjectForm() {
 
   const beforeImages = (images?.filter(img => img.imageType === 'before') || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
   const afterImages = (images?.filter(img => img.imageType === 'after') || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-  const galleryImages = images?.filter(img => img.imageType === 'gallery') || [];
+  const galleryImages = (images?.filter(img => img.imageType === 'gallery') || []).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
 
   const thumbnailUrl = form.watch('thumbnailUrl');
   const heroImageUrl = form.watch('heroImageUrl');
@@ -654,7 +655,7 @@ export default function ProjectForm() {
                           collisionDetection={closestCenter}
                           onDragEnd={(event) => handleDragEnd(event, 'before')}
                         >
-                          <SortableContext items={beforeImages.map(img => img.id)} strategy={verticalListSortingStrategy}>
+                          <SortableContext items={beforeImages.map(img => img.id)} strategy={rectSortingStrategy}>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                               {beforeImages.map((image) => (
                                 <SortableImage
@@ -705,7 +706,7 @@ export default function ProjectForm() {
                           collisionDetection={closestCenter}
                           onDragEnd={(event) => handleDragEnd(event, 'after')}
                         >
-                          <SortableContext items={afterImages.map(img => img.id)} strategy={verticalListSortingStrategy}>
+                          <SortableContext items={afterImages.map(img => img.id)} strategy={rectSortingStrategy}>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                               {afterImages.map((image) => (
                                 <SortableImage
@@ -744,9 +745,9 @@ export default function ProjectForm() {
                         Add Gallery Images
                       </ObjectUploader>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {isNewProject ? (
-                        pendingImages.gallery.map((url, index) => (
+                    {isNewProject ? (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {pendingImages.gallery.map((url, index) => (
                           <div key={index} className="relative" data-testid={`pending-image-gallery-${index}`}>
                             <img src={url} alt="Gallery (pending)" className="w-full aspect-square object-cover rounded" />
                             <Button
@@ -760,25 +761,27 @@ export default function ProjectForm() {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                        ))
-                      ) : (
-                        galleryImages.map((image) => (
-                          <div key={image.id} className="relative" data-testid={`image-gallery-${image.id}`}>
-                            <img src={image.imageUrl} alt="Gallery" className="w-full aspect-square object-cover rounded" />
-                            <Button
-                              type="button"
-                              variant="destructive"
-                              size="icon"
-                              className="absolute -top-2 -right-2"
-                              onClick={() => deleteImageMutation.mutate(image.id)}
-                              data-testid={`button-delete-gallery-${image.id}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                        ))}
+                      </div>
+                    ) : (
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={(event) => handleDragEnd(event, 'gallery')}
+                      >
+                        <SortableContext items={galleryImages.map(img => img.id)} strategy={rectSortingStrategy}>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {galleryImages.map((image) => (
+                              <SortableImage
+                                key={image.id}
+                                image={image}
+                                onDelete={() => deleteImageMutation.mutate(image.id)}
+                              />
+                            ))}
                           </div>
-                        ))
-                      )}
-                    </div>
+                        </SortableContext>
+                      </DndContext>
+                    )}
                   </CardContent>
                 </Card>
 

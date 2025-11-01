@@ -38,6 +38,12 @@ Preferred communication style: Simple, everyday language.
    - Added top navigation banner to project detail pages
    - Header now appears consistently across landing page and project pages
    - Includes "hwang portfolio" home link, "Work", and "Admin" navigation links
+3. **Drag-and-Drop Image Reordering:**
+   - Implemented drag-and-drop functionality for all project images (before/after/gallery)
+   - Uses dnd-kit library with rectSortingStrategy for grid layouts
+   - Visual grip handles on all images for intuitive dragging
+   - Automatically saves new order via API mutations
+   - Order persists after page refresh
 
 **October 31, 2025:**
 1. Migrated authentication system from Replit OAuth to username/password authentication
