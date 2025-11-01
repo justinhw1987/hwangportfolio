@@ -34,6 +34,10 @@ Preferred communication style: Simple, everyday language.
    - Shows image counter and captions
    - Closes with Escape key or close button
    - Added accessibility support with aria-labels and visually hidden dialog descriptions
+2. **Navigation Consistency:**
+   - Added top navigation banner to project detail pages
+   - Header now appears consistently across landing page and project pages
+   - Includes "hwang portfolio" home link, "Work", and "Admin" navigation links
 
 **October 31, 2025:**
 1. Migrated authentication system from Replit OAuth to username/password authentication

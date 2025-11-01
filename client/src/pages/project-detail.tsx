@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
-import { ArrowLeft, Loader2, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import type { Project, ProjectImage } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -75,20 +75,35 @@ export default function ProjectDetail() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Fixed Navigation */}
-      <div className="fixed top-6 left-6 z-50">
-        <Link href="/">
-          <a>
-            <Button variant="outline" size="sm" className="backdrop-blur-md bg-background/80" data-testid="button-back">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back
-            </Button>
-          </a>
-        </Link>
-      </div>
+      {/* Header */}
+      <header className="fixed top-0 left-0 right-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <Link href="/">
+              <span className="text-xl font-bold font-display text-white hover-elevate active-elevate-2 px-2 py-1 rounded-md cursor-pointer" data-testid="link-home">
+                hwang portfolio
+              </span>
+            </Link>
+            <nav className="flex items-center gap-6">
+              <div className="hidden md:flex items-center gap-8">
+                <Link href="/">
+                  <span className="text-sm uppercase tracking-wider text-white/90 hover:text-white hover:underline decoration-2 underline-offset-8 transition-all cursor-pointer" data-testid="link-nav-work">
+                    Work
+                  </span>
+                </Link>
+                <Link href="/admin">
+                  <span className="text-sm uppercase tracking-wider text-white/90 hover:text-white hover:underline decoration-2 underline-offset-8 transition-all cursor-pointer" data-testid="link-nav-admin">
+                    Admin
+                  </span>
+                </Link>
+              </div>
+            </nav>
+          </div>
+        </div>
+      </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-[70vh] flex items-end">
+      <section className="relative min-h-[70vh] flex items-end pt-16">
         {project.heroImageUrl ? (
           <div className="absolute inset-0">
             <img 
